@@ -38,6 +38,7 @@ export class WhiteCat {
       onBump: () => this.onBump(),
     });
     this.body.appendChild(this.maze.svg);
+    this.body.appendChild(this.maze.threadLayer);
 
     this.grab.addEventListener('click', () => void this.open());
     this.grab.addEventListener('keydown', (e) => {

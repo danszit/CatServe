@@ -69,6 +69,8 @@ export interface MazeCallbacks {
 
 export class YarnMaze {
   readonly svg: SVGSVGElement;
+  /** Thread + knot, on a separate compositor layer above the static walls. */
+  readonly threadLayer: SVGSVGElement;
   private grid: Cell[][];
   private path: Cell[] = [];
   private tip = { x: 0, y: 0 };
@@ -99,12 +101,14 @@ export class YarnMaze {
     const w = cols * CELL + PAD * 2;
     const h = rows * CELL + PAD * 2;
     this.svg = el('svg', { class: 'maze-svg', viewBox: `0 0 ${w} ${h}`, preserveAspectRatio: 'xMidYMid meet' });
+    this.threadLayer = el('svg', { class: 'maze-svg maze-svg--thread', viewBox: `0 0 ${w} ${h}`, preserveAspectRatio: 'xMidYMid meet' });
     this.build();
     this.reset();
 
-    this.svg.addEventListener('pointermove', (e) => this.onPointer(e));
-    this.svg.addEventListener('pointerdown', (e) => this.onPointer(e));
-    this.svg.addEventListener('pointerleave', () => {
+    // the thread layer is on top, so it receives the pointer
+    this.threadLayer.addEventListener('pointermove', (e) => this.onPointer(e));
+    this.threadLayer.addEventListener('pointerdown', (e) => this.onPointer(e));
+    this.threadLayer.addEventListener('pointerleave', () => {
       this.lastPointer = null;
     });
     window.addEventListener('resize', () => {
@@ -168,11 +172,11 @@ export class YarnMaze {
     this.svg.appendChild(this.startBall);
     this.goalPos.appendChild(this.goalCat);
     this.svg.appendChild(this.goalPos);
-    this.svg.appendChild(this.stringOutline);
-    this.svg.appendChild(this.stringMain);
-    this.svg.appendChild(this.stringSheen);
+    this.threadLayer.appendChild(this.stringOutline);
+    this.threadLayer.appendChild(this.stringMain);
+    this.threadLayer.appendChild(this.stringSheen);
     this.stringEndPos.appendChild(this.stringEnd);
-    this.svg.appendChild(this.stringEndPos);
+    this.threadLayer.appendChild(this.stringEndPos);
 
     // knot at the tip of the string
     this.stringEnd.appendChild(el('circle', { r: 11, fill: '#E8558E', stroke: '#1B1B1B', 'stroke-width': 3 }));
@@ -254,7 +258,7 @@ export class YarnMaze {
   private onPointer(e: PointerEvent): void {
     if (!this.active || this.solved) return;
     if (!this.toLocal) {
-      const ctm = this.svg.getScreenCTM();
+      const ctm = this.threadLayer.getScreenCTM();
       if (!ctm) return;
       this.toLocal = ctm.inverse();
     }
@@ -298,24 +302,24 @@ export class YarnMaze {
       return;
     }
 
-    const dx = cell.c - head.c;
-    const dy = cell.r - head.r;
-    const adjacent = Math.abs(dx) + Math.abs(dy) === 1;
-    if (adjacent) {
-      const dir = DIRS.findIndex(([ddx, ddy]) => ddx === dx && ddy === dy);
-      if (dir >= 0 && !head.walls[dir]) {
-        // avoid crossing our own string: if the cell is already on the path, rewind to it
-        const existing = this.path.indexOf(cell);
+    // Find a short open route from the head to the cell under the pointer. One step is
+    // the normal case; a few steps covers a corner cut diagonally or a quick flick, so the
+    // thread keeps up instead of sticking and bumping until the pointer retraces exactly.
+    const route = this.routeTo(head, cell, 4);
+    if (route) {
+      for (const next of route) {
+        // never cross our own string: stepping onto it rewinds to that point
+        const existing = this.path.indexOf(next);
         if (existing >= 0) this.path.length = existing + 1;
-        else this.path.push(cell);
-        this.clampTip(cell, x, y);
-        this.cb.onProgress(this.path.length, this.cols * this.rows);
-        if (cell === this.goal) {
-          this.solved = true;
-          this.cb.onSolved();
-        }
-        return;
+        else this.path.push(next);
       }
+      this.clampTip(cell, x, y);
+      this.cb.onProgress(this.path.length, this.cols * this.rows);
+      if (cell === this.goal) {
+        this.solved = true;
+        this.cb.onSolved();
+      }
+      return;
     }
 
     // blocked by a wall (or too far away): tip presses against the wall
@@ -324,6 +328,32 @@ export class YarnMaze {
       this.bumpCooldown = now + 350;
       this.cb.onBump();
     }
+  }
+
+  /** Shortest open path from `from` to `to` (excluding `from`), or null if longer than `maxSteps`. */
+  private routeTo(from: Cell, to: Cell, maxSteps: number): Cell[] | null {
+    const prev = new Map<Cell, Cell | null>([[from, null]]);
+    let frontier: Cell[] = [from];
+    for (let depth = 0; depth < maxSteps && frontier.length; depth++) {
+      const next: Cell[] = [];
+      for (const cur of frontier) {
+        for (let i = 0; i < 4; i++) {
+          if (cur.walls[i]) continue;
+          const [dx, dy] = DIRS[i] as readonly [number, number];
+          const n = this.grid[cur.r + dy]?.[cur.c + dx];
+          if (!n || prev.has(n)) continue;
+          prev.set(n, cur);
+          if (n === to) {
+            const route: Cell[] = [];
+            for (let c: Cell | null | undefined = n; c && c !== from; c = prev.get(c)) route.unshift(c);
+            return route;
+          }
+          next.push(n);
+        }
+      }
+      frontier = next;
+    }
+    return null;
   }
 
   private clampTip(cell: Cell, x: number, y: number): void {

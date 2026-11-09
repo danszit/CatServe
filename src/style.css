@@ -688,6 +688,10 @@ body {
   overflow: visible;
 }
 
+.maze-svg--thread {
+  will-change: transform;
+}
+
 .maze-wall {
   stroke: var(--pink-deep);
   stroke-width: 7;

@@ -60,14 +60,16 @@ export class BlackCat {
   }
 
   /** Big round "food!" pupils. */
+  private dilations: Animation[] = [];
+
   private dilate(on: boolean): void {
-    for (const p of this.pupils) {
-      p.animate([{ r: p.getAttribute('r') ?? '12' }, { r: on ? '15.5' : '12' }], {
-        duration: 220,
-        fill: 'forwards',
-        easing: 'ease-out',
-      });
-    }
+    // A forward-filled animation stays alive forever; without this cancel every fish
+    // hover would leave two more behind for the browser to evaluate each frame.
+    for (const a of this.dilations) a.cancel();
+    this.dilations = this.pupils.map((p) => {
+      const from = getComputedStyle(p).r || p.getAttribute('r') || '12';
+      return p.animate([{ r: from }, { r: on ? '15.5' : '12' }], { duration: 220, fill: 'forwards', easing: 'ease-out' });
+    });
   }
 
   async feed(): Promise<void> {
