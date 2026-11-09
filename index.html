@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CatServe</title>
+  <meta name="description" content="Two cats, two kinds of reward. A konbini-style cat video dispenser." />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;700;800;900&family=Mochiy+Pop+One&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div id="app">
+    <header class="awning" aria-hidden="true">
+      <div class="awning-stripes"></div>
+      <div class="awning-scallops"></div>
+    </header>
+
+    <section class="sign">
+      <div class="sign-badge sign-badge--left"><span>24H</span><small>OPEN</small></div>
+      <h1 class="sign-title">
+        <span class="sign-jp">CatServe</span>
+        <span class="sign-en">Cat Video Dispenser</span>
+      </h1>
+      <div class="sign-badge sign-badge--right"><span>∞</span><small>TREATS</small></div>
+    </section>
+
+    <main class="stage" id="stage">
+      <div class="floor">
+        <aside class="maze-panel" id="maze-panel" aria-hidden="true">
+          <div class="maze-card" id="maze-card">
+            <div class="maze-head">
+              <span class="maze-kana">PULL</span>
+              <span class="maze-title">Yarn Maze</span>
+              <button class="maze-close" id="maze-close" type="button" aria-label="Let go of the yarn">✕</button>
+            </div>
+            <div class="maze-body" id="maze-body"></div>
+          </div>
+          <div class="maze-fold" id="maze-fold" aria-hidden="true"></div>
+        </aside>
+
+        <div class="scene" id="scene">
+          <!-- Scene SVG is injected by src/art/scene.ts -->
+        </div>
+      </div>
+    </main>
+
+    <div class="reward" id="reward" aria-hidden="true" role="dialog" aria-label="Reward">
+      <div class="reward-card">
+        <div class="reward-head">
+          <span class="reward-kana">TREAT</span>
+          <button class="reward-close" id="reward-close" type="button" aria-label="Close">✕</button>
+        </div>
+        <div class="reward-screen">
+          <div class="reward-player" id="reward-player"></div>
+          <div class="reward-fallback" id="reward-fallback" hidden>
+            <p class="reward-fallback-kana">Oops…</p>
+            <p>The playlist could not be loaded inside the page.</p>
+            <a id="reward-fallback-link" href="#" target="_blank" rel="noopener">Open the playlist on YouTube ↗</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

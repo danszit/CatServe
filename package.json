@@ -1,0 +1,17 @@
+{
+  "name": "catserve",
+  "version": "1.0.0",
+  "description": "Two cats, two kinds of reward. A konbini-style cat video dispenser.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^6.0.3",
+    "vite": "^7.0.0"
+  },
+  "private": true
+}
